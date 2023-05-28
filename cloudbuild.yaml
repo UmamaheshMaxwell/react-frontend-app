@@ -1,0 +1,22 @@
+substitutions:
+  _PROJECT_ID: '$PROJECT_ID'
+steps:
+  #Build the container Image 
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ["build", "-t", "gcr.io/$_PROJECT_ID/react-frontend-app:$COMMIT_SHA", "."]
+  # pusth the repo to container registry 
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ["push", "gcr.io/$_PROJECT_ID/react-frontend-app:$COMMIT_SHA" ]
+   # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: 
+     - run
+     - deploy
+     - react-frontend-app
+     - --allow-unauthenticated
+     - --set-secrets=DB_USER=projects/$PROJECT_NUMBER/secrets/DB_USER/versions/latest,DB_PASSWORD=projects/$PROJECT_NUMBER/secrets/DB_PASSWORD/versions/latest,DB_DATABASE=projects/$PROJECT_NUMBER/secrets/DB_DATABASE/versions/latest,DB_HOST=projects/$PROJECT_NUMBER/secrets/DB_HOST/versions/latest,DB_PORT=projects/$PROJECT_NUMBER/secrets/DB_PORT/versions/latest
+     - --image=gcr.io/$_PROJECT_ID/react-frontend-app:$COMMIT_SHA
+     - --vpc-connector=sqlconnect
+     - --port=3000
+     - --region=us-central1
